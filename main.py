@@ -166,11 +166,12 @@ def prepareSign(user, keepLogin=True):
 # startType = 0 使用保持登录状态签到
 # startType = 1 使用登录签到
 def startSign(userId, token, planId, user, startType):
-    hourNow = datetime.datetime.now(pytz.timezone('PRC')).hour
-    if hourNow < 12:
-        signType = 'START'
-    else:
-        signType = 'END'
+    # hourNow = datetime.datetime.now(pytz.timezone('PRC')).hour
+    # if hourNow < 12:
+    #     signType = 'START'
+    # else:
+    #     signType = 'END'
+    signType = 'START'
     phone = user["phone"]
     print('-------------准备签到--------------')
 
@@ -219,65 +220,9 @@ def startSign(userId, token, planId, user, startType):
 
     print('-------------签到完成--------------')
 
-
-def signCheck(users):
-    for user in users:
-        if not user["signCheck"] and user["enable"]:
-            continue
-
-        print()
-        url = "https://api.moguding.net:9000/attendence/clock/v1/listSynchro"
-        if user["keepLogin"]:
-            print('          此用户保持登录状态开启，准备使用Token查询          ')
-            token = user["token"]
-        else:
-            print('            此用户保持登录状态关闭，准备登录账号          ')
-            token = getToken(user)["data"]["token"]
-        header = {
-            "accept-encoding": "gzip",
-            "content-type": "application/json;charset=UTF-8",
-            "rolekey": "student",
-            "host": "api.moguding.net:9000",
-            "authorization": token,
-            "user-agent": getUserAgent(user)
-        }
-        t = str(int(time.time() * 1000))
-        data = {
-            "t": encrypt("23DbtQHR2UMbH6mJ", t)
-        }
-        res = requests.post(url=url, headers=header, data=json.dumps(data))
-
-        if res.json()["msg"] != 'success':
-            print('            获取用户打卡记录失败          ')
-            continue
-
-        lastSignInfo = res.json()["data"][0]
-        lastSignDate = lastSignInfo["dateYmd"]
-        lastSignType = lastSignInfo["type"]
-        hourNow = datetime.datetime.now(pytz.timezone('PRC')).hour
-        nowDate = str(datetime.datetime.now(pytz.timezone('PRC')))[0:10]
-        if hourNow <= 12 and lastSignType == 'END' and lastSignDate != nowDate:
-            print('            今日未打上班卡，准备补签          ')
-            prepareSign(user)
-        if hourNow >= 23 and lastSignType == 'START' and lastSignDate == nowDate:
-            print('            今日未打下班卡，准备补签          ')
-            prepareSign(user)
-        print('        Tips：如果没提示上班或者下班补签即代表上次打卡正常          ')
-        continue
-
-
 if __name__ == '__main__':
     users = parseUserInfo()
     hourNow = datetime.datetime.now(pytz.timezone('PRC')).hour
-    if hourNow == 11 or hourNow == 23:
-        print('----------------------------每日签到检查开始-----------------------------')
-        print('          每日11点以及23点为打卡检查，此时间段内自动打卡不会运行          ')
-        try:
-            signCheck(users)
-        except Exception as e:
-            print('每日签到检查运行错误！可能与服务器建立连接失败,具体错误原因：' + str(e))
-        print('----------------------------每日签到检查完成-----------------------------')
-        sys.exit()
     for user in users:
         try:
             prepareSign(user)
