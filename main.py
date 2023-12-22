@@ -2,15 +2,12 @@ import datetime
 import json
 import os
 import random
-import sys
 import time
 from hashlib import md5
 
 
 import requests
 from utils import AES,UTC as pytz
-
-import MessagePush
 
 pwd = os.path.dirname(os.path.abspath(__file__)) + os.sep
 
@@ -193,31 +190,6 @@ def startSign(userId, token, planId, user, startType):
             print('-------------签到完成--------------')
             return True
 
-    ######################################
-    # 处理推送信息
-    pushSignType = '上班'
-    if signType == 'END':
-        pushSignType = '下班'
-
-    pushSignIsOK = '成功！'
-    if not signResp:
-        pushSignIsOK = '失败！'
-
-    signStatus = '打卡'
-
-    hourNow = datetime.datetime.now(pytz.timezone('PRC')).hour
-    if hourNow == 11 or hourNow == 23:
-        signStatus = '补签'
-
-    # 推送消息内容构建
-
-    MessagePush.pushMessage(phone, '工学云' + pushSignType + signStatus + pushSignIsOK,
-                            '用户：' + phone + '，工学云' + pushSignType + signStatus + pushSignIsOK
-                            , user["pushKey"])
-
-    # 消息推送处理完毕
-    #####################################
-
     print('-------------签到完成--------------')
 
 if __name__ == '__main__':
@@ -228,9 +200,3 @@ if __name__ == '__main__':
             prepareSign(user)
         except Exception as e:
             print('工学云打卡失败，错误原因：' + str(e))
-            MessagePush.pushMessage(user["phone"], '工学云打卡失败',
-                                    '工学云打卡失败, 可能是连接工学云服务器超时,但请别担心，' +
-                                    '中午11点以及晚上23点，我们会进行打卡检查，' +
-                                    '如未打卡则会自动补签（在打卡检查启用的情况下）。\n\n\n' +
-                                    '具体错误信息：' + str(e)
-                                    , user["pushKey"])
